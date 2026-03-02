@@ -2,14 +2,27 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound, CouldNotRetrieveTranscript
+from youtube_transcript_api.proxies import WebshareProxyConfig, GenericProxyConfig
 import re
 import json
 import time
 import requests
 import openai
+import os
 
 app = Flask(__name__)
 CORS(app, origins=["https://shashanksub42.github.io"])
+
+# Build proxy config from environment variables if available
+def get_proxy_config():
+    ws_user = os.environ.get("WEBSHARE_USERNAME")
+    ws_pass = os.environ.get("WEBSHARE_PASSWORD")
+    if ws_user and ws_pass:
+        return WebshareProxyConfig(proxy_username=ws_user, proxy_password=ws_pass)
+    generic_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("HTTPS_PROXY")
+    if generic_proxy:
+        return GenericProxyConfig(http_url=generic_proxy, https_url=generic_proxy)
+    return None
 
 
 def extract_video_id(url):
@@ -84,7 +97,8 @@ def load_video():
 
     title = get_video_title(video_id)
 
-    ytt = YouTubeTranscriptApi()
+    proxy_config = get_proxy_config()
+    ytt = YouTubeTranscriptApi(proxy_config=proxy_config) if proxy_config else YouTubeTranscriptApi()
     try:
         fetched = ytt.fetch(video_id)
         raw_entries = [
