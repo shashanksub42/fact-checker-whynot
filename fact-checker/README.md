@@ -6,12 +6,12 @@ Real-time AI-powered fact checker for YouTube videos. As a video plays, the app 
 
 ## Features
 
-- 🎬 Paste any YouTube URL and watch it in an embedded player
-- 🔍 Real-time fact checking via GPT-4o-mini — synced to the current video position
-- ✅ Claims highlighted as **FACT** (green) or **SPECULATION** (amber)
-- 🔗 Source links provided for facts
-- 🗂 Persistent source archive grouped by video title with timestamps
-- ⏳ Automatic retry with countdown on rate limits
+- Paste any YouTube URL and watch it in an embedded player
+- Real-time fact checking via GPT-4o-mini — synced to the current video position
+- Claims highlighted as **FACT** (green) or **SPECULATION** (amber)
+- Source links provided for facts
+- Persistent source archive grouped by video title with timestamps
+- Automatic retry with countdown on rate limits
 
 ---
 
