@@ -188,7 +188,9 @@ function pollTick() {
 
   currentChunkIdx = idx;
   chunkStatus.textContent = `Segment ${idx + 1} / ${chunks.length}`;
-  showChunkResults(idx);
+  ensureChunkGroup(idx);   // create DOM group when video reaches this timestamp
+  renderChunkGroup(idx);   // fill it immediately if results already arrived
+  activateChunkGroup(idx);
 }
 
 /* ── Chunk fetching ──────────────────────────────────────────────── */
@@ -213,14 +215,12 @@ async function fetchChunk(idx) {
     // Save sources to archive
     saveSourcesToArchive(data.claims || [], chunks[idx].start);
 
-    // If this is the currently playing chunk, refresh the display
-    if (idx === currentChunkIdx) {
-      showChunkResults(idx);
-    }
+    // Update this chunk's group in the results panel
+    renderChunkGroup(idx);
   } catch (err) {
     const isRateLimit = err.status === 429 || /rate limit|429/i.test(err.message);
     chunkResults[idx] = { status: "error", error: err.message, rateLimit: isRateLimit };
-    if (idx === currentChunkIdx) showChunkResults(idx);
+    renderChunkGroup(idx);
 
     // Auto-retry rate-limit errors after a delay
     if (isRateLimit) {
@@ -240,7 +240,7 @@ function scheduleRetry(idx, seconds) {
 
   let remaining = seconds;
   chunkResults[idx] = { status: "error", error: `Rate limited – retrying in ${remaining}s…`, rateLimit: true, countdown: remaining };
-  if (idx === currentChunkIdx) showChunkResults(idx);
+  renderChunkGroup(idx);
 
   retryTimers[idx] = setInterval(() => {
     remaining--;
@@ -249,70 +249,112 @@ function scheduleRetry(idx, seconds) {
       delete retryTimers[idx];
       delete chunkResults[idx];
       fetchChunk(idx);
-      if (idx === currentChunkIdx) showChunkResults(idx);
+      renderChunkGroup(idx);
     } else {
       if (chunkResults[idx]) {
         chunkResults[idx].error = `Rate limited – retrying in ${remaining}s…`;
         chunkResults[idx].countdown = remaining;
-        if (idx === currentChunkIdx) showChunkResults(idx);
+        renderChunkGroup(idx);
       }
     }
   }, 1000);
 }
 
-/* ── Results Display ─────────────────────────────────────────────── */
-function showChunkResults(idx) {
+/* ── Results Panel – cumulative grouped view ─────────────────────── */
+
+// Ensure a group container exists for chunk idx (creates it if absent)
+function ensureChunkGroup(idx) {
+  const groupId = `fc-group-${idx}`;
+  if (document.getElementById(groupId)) return;
+
+  // Remove placeholder if present
+  const placeholder = resultsBody.querySelector(".placeholder-msg");
+  if (placeholder) placeholder.remove();
+
+  const group = document.createElement("div");
+  group.id = groupId;
+  group.className = "fc-group";
+
+  const header = document.createElement("button");
+  header.className = "fc-group-header";
+  header.textContent = formatTime(chunks[idx].start);
+  header.title = "Jump to this segment";
+  header.addEventListener("click", () => {
+    if (playerReady && ytPlayer) {
+      ytPlayer.seekTo(chunks[idx].start, true);
+      ytPlayer.playVideo();
+    }
+  });
+
+  const body = document.createElement("div");
+  body.className = "fc-group-body";
+  body.innerHTML = `<div class="fc-group-analysing"><span class="dot-pulse"></span> Analysing…</div>`;
+
+  group.appendChild(header);
+  group.appendChild(body);
+
+  // Insert in timestamp order
+  const existing = Array.from(resultsBody.querySelectorAll(".fc-group"));
+  const after = existing.find(el => {
+    const elIdx = parseInt(el.id.replace("fc-group-", ""));
+    return elIdx > idx;
+  });
+  if (after) resultsBody.insertBefore(group, after);
+  else resultsBody.appendChild(group);
+}
+
+// Fill / refresh the body of an existing group (does NOT create the group)
+function renderChunkGroup(idx) {
+  const body = document.querySelector(`#fc-group-${idx} .fc-group-body`);
+  if (!body) return;  // group not yet created — will render when video reaches this timestamp
+
   const result = chunkResults[idx];
 
-  if (!result) {
-    // Not yet started
-    resultsBody.innerHTML = "";
-    resultsBody.appendChild(makePlaceholder("Analysing this segment…"));
-    fcLoading.classList.remove("hidden");
-    return;
-  }
+  // Update the fc-loading spinner visibility based on in-flight state
+  const anyInFlight = inFlight.size > 0 ||
+    Object.values(chunkResults).some(r => r && r.status !== "done" && r.status !== "error");
+  fcLoading.classList.toggle("hidden", !anyInFlight);
 
-  if (result.status === "error") {
-    fcLoading.classList.add("hidden");
-    resultsBody.innerHTML = "";
-    const isRateLimit = result.rateLimit;
-    const msg = document.createElement("div");
-    msg.className = "error-msg";
-    const countdown = result.countdown;
-    const countdownHtml = countdown
-      ? `<br/><span style="font-size:.8rem;color:#f59e0b">⏳ Auto-retrying in ${countdown}s</span>`
-      : `<br/><button id="retry-btn" class="ghost-btn" style="margin-top:.5rem">↺ Retry</button>`;
-    msg.innerHTML = `${ isRateLimit ? "⏳" : "⚠"} ${escapeHtml(result.error || "Unknown error")}${countdownHtml}`;
-    resultsBody.appendChild(msg);
-    if (!countdown) {
-      document.getElementById("retry-btn").addEventListener("click", () => {
-        delete chunkResults[idx];
-        fetchChunk(idx);
-        showChunkResults(idx);
-      });
+  if (!result || result.status !== "done") {
+    // Error or still loading – show inline message
+    if (result && result.status === "error") {
+      const countdown = result.countdown;
+      const countdownHtml = countdown
+        ? `<span class="fc-retry-info">⏳ Auto-retrying in ${countdown}s</span>`
+        : `<button class="ghost-btn fc-retry-btn" style="margin-top:.4rem">↺ Retry</button>`;
+      body.innerHTML = `<div class="error-msg" style="margin:.25rem 0">${result.rateLimit ? "⏳" : "⚠"} ${escapeHtml(result.error || "Unknown error")}<br/>${countdownHtml}</div>`;
+      if (!countdown) {
+        body.querySelector(".fc-retry-btn").addEventListener("click", () => {
+          delete chunkResults[idx];
+          renderChunkGroup(idx);
+          fetchChunk(idx);
+        });
+      }
+    } else {
+      body.innerHTML = `<div class="fc-group-analysing"><span class="dot-pulse"></span> Analysing…</div>`;
     }
     return;
   }
 
-  if (result.status !== "done") {
-    resultsBody.innerHTML = "";
-    resultsBody.appendChild(makePlaceholder("Analysing this segment…"));
-    fcLoading.classList.remove("hidden");
-    return;
-  }
-
-  fcLoading.classList.add("hidden");
-
   if (result.claims.length === 0) {
-    resultsBody.innerHTML = "";
-    resultsBody.appendChild(makePlaceholder("No specific claims identified in this segment."));
+    body.innerHTML = `<div class="fc-group-empty">No specific claims identified.</div>`;
     return;
   }
 
-  resultsBody.innerHTML = "";
+  body.innerHTML = "";
   result.claims.forEach(claim => {
-    resultsBody.appendChild(buildClaimCard(claim, chunks[idx].start));
+    body.appendChild(buildClaimCard(claim, chunks[idx].start));
   });
+}
+
+// Mark the active group and scroll it into view
+function activateChunkGroup(idx) {
+  document.querySelectorAll(".fc-group-header").forEach(h => h.classList.remove("active"));
+  const header = document.querySelector(`#fc-group-${idx} .fc-group-header`);
+  if (header) {
+    header.classList.add("active");
+    header.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
 }
 
 function buildClaimCard(claim, chunkStart) {
@@ -425,13 +467,20 @@ function renderArchive() {
       const row = document.createElement("div");
       row.className = "archive-source-item";
       row.innerHTML = `
-        <span class="arch-ts">${formatTime(item.timestamp)}</span>
+        <button class="arch-ts arch-ts-btn" title="Jump to ${formatTime(item.timestamp)} in video">${formatTime(item.timestamp)} ↩</button>
         <div>
           <a class="arch-link" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">
             ${escapeHtml(truncate(item.url, 55))}
           </a>
           <div class="arch-label">${escapeHtml(truncate(item.label, 80))}</div>
         </div>`;
+      row.querySelector(".arch-ts-btn").addEventListener("click", () => {
+        if (playerReady && ytPlayer) {
+          ytPlayer.seekTo(item.timestamp, true);
+          ytPlayer.playVideo();
+          workspace.scrollIntoView({ behavior: "smooth" });
+        }
+      });
       listEl.appendChild(row);
     });
 

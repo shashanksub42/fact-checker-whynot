@@ -248,13 +248,74 @@ input:focus { border-color: var(--accent); }
   top: 1.5rem;
 }
 
-/* ── Results Panel ───────────────────────────────────────────────── */
+/* ── Results Panel – grouped view ────────────────────────────────── */
+.fc-group {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: .5rem;
+  margin-bottom: .25rem;
+}
+.fc-group:last-child { border-bottom: none; }
+
+.fc-group-header {
+  width: 100%;
+  text-align: left;
+  background: var(--bg3);
+  border: none;
+  border-radius: 6px;
+  padding: .35rem .75rem;
+  font-size: .72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  cursor: pointer;
+  margin-bottom: .5rem;
+  font-family: var(--font);
+  transition: background .15s, color .15s;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.fc-group-header::before { content: "⏱"; font-size: .8rem; }
+.fc-group-header:hover { background: rgba(108,99,255,.15); color: var(--accent2); }
+.fc-group-header.active {
+  background: rgba(108,99,255,.22);
+  color: #fff;
+  border-left: 3px solid var(--accent);
+  padding-left: calc(.75rem - 3px);
+}
+
+.fc-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: 0 .25rem;
+}
+.fc-group-analysing {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  color: var(--text-dim);
+  font-size: .82rem;
+  padding: .35rem .5rem;
+}
+.fc-group-empty {
+  color: var(--text-dim);
+  font-size: .8rem;
+  font-style: italic;
+  padding: .25rem .5rem;
+}
+.fc-retry-info {
+  font-size: .78rem;
+  color: var(--spec);
+}
+
+/* ── Results Panel container ────────────────────────────────── */
 .results-panel {
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  max-height: 460px;
+  max-height: 640px;
   display: flex;
   flex-direction: column;
 }
@@ -421,15 +482,22 @@ input:focus { border-color: var(--accent); }
 .arch-ts {
   font-size: .68rem;
   font-variant-numeric: tabular-nums;
-  color: var(--text-dim);
+  color: var(--accent2);
   white-space: nowrap;
-  padding-top: 2px;
   flex-shrink: 0;
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: .1rem .4rem;
+  padding: .1rem .45rem;
   height: fit-content;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background .15s, border-color .15s, color .15s;
+}
+.arch-ts:hover {
+  background: rgba(108,99,255,.18);
+  border-color: var(--accent);
+  color: #fff;
 }
 .arch-link {
   font-size: .77rem;
