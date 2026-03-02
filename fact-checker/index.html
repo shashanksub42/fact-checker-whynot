@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Real-Time Fact Checker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Header ───────────────────────────────────────────────────── -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⚖️</span>
+        <span class="logo-text">FactCheck<span class="accent">AI</span></span>
+      </div>
+      <p class="tagline">Real-time fact checking for YouTube videos</p>
+    </div>
+  </header>
+
+  <!-- ── Setup Panel ──────────────────────────────────────────────── -->
+  <section id="setup-panel" class="setup-panel">
+    <div class="setup-inner">
+      <div class="input-group">
+        <label for="yt-url">YouTube URL</label>
+        <input
+          type="text"
+          id="yt-url"
+          placeholder="https://www.youtube.com/watch?v=..."
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <div class="input-group">
+        <label for="api-key">
+          OpenAI API Key
+          <span class="label-hint">(stored locally, never sent to our servers)</span>
+        </label>
+        <div class="key-wrap">
+          <input
+            type="password"
+            id="api-key"
+            placeholder="sk-..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button id="toggle-key" class="icon-btn" title="Show/hide key">👁</button>
+        </div>
+      </div>
+      <button id="load-btn" class="primary-btn">
+        <span id="load-btn-text">Load Video &amp; Start Fact Check</span>
+        <span id="load-spinner" class="spinner hidden"></span>
+      </button>
+      <div id="setup-error" class="error-msg hidden"></div>
+    </div>
+  </section>
+
+  <!-- ── Main Workspace ───────────────────────────────────────────── -->
+  <main id="workspace" class="workspace hidden">
+
+    <!-- Left column: player -->
+    <section class="left-col">
+
+      <div class="player-wrap">
+        <div id="yt-player"></div>
+      </div>
+
+      <div class="video-meta">
+        <h2 id="video-title-display" class="video-title"></h2>
+        <div class="progress-info">
+          <span id="chunk-status"></span>
+          <span id="time-display" class="time-badge">0:00</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Right column: results + archive -->
+    <section class="right-col">
+
+      <!-- Current fact-check results -->
+      <div class="results-panel">
+        <h3 class="panel-title">
+          🔍 Fact Check
+          <span id="fc-loading" class="fc-loading hidden">
+            <span class="dot-pulse"></span> Analysing…
+          </span>
+        </h3>
+        <div id="results-body" class="results-body">
+          <div class="placeholder-msg">Play the video to start fact checking…</div>
+        </div>
+      </div>
+
+      <!-- Archive -->
+      <div class="archive-panel">
+        <div class="archive-header">
+          <h3 class="panel-title">🗂 Source Archive</h3>
+          <button id="clear-archive-btn" class="ghost-btn" title="Clear archive">Clear</button>
+        </div>
+        <div id="archive-groups" class="archive-groups"></div>
+        <div id="archive-empty" class="placeholder-msg">No sources saved yet.</div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ── YouTube IFrame API ────────────────────────────────────────── -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script src="app.js"></script>
+</body>
+</html>
