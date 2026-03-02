@@ -44,23 +44,15 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Start the backend
+### 4. Start the server
 
 ```bash
 python server.py
 ```
 
-The Flask API will start on **http://localhost:5503**.
+Flask serves both the API and the frontend on **http://localhost:5504**.
 
-### 5. Serve the frontend
-
-Open a second terminal (in the same directory):
-
-```bash
-python3 -m http.server 5504
-```
-
-### 6. Open the app
+### 5. Open the app
 
 Go to **http://localhost:5504** in your browser.
 
