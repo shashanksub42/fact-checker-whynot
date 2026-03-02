@@ -9,7 +9,7 @@ import requests
 import openai
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["https://shashanksub42.github.io"])
 
 
 def extract_video_id(url):
