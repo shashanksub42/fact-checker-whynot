@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound, CouldNotRetrieveTranscript
@@ -11,7 +11,16 @@ import openai
 import os
 
 app = Flask(__name__)
-CORS(app, origins=["https://shashanksub42.github.io"])
+CORS(app, origins=["https://shashanksub42.github.io", "http://localhost:5504", "http://127.0.0.1:5504", "null"])
+
+# Serve frontend static files
+@app.route("/")
+def index():
+    return send_from_directory(".", "index.html")
+
+@app.route("/<path:filename>")
+def static_files(filename):
+    return send_from_directory(".", filename)
 
 # Build proxy config from environment variables if available
 def get_proxy_config():
@@ -209,5 +218,5 @@ def fact_check():
 
 
 if __name__ == "__main__":
-    print("=== Fact Checker backend running on http://localhost:5503 ===")
-    app.run(port=5503, debug=False)
+    print("=== Fact Checker backend running on http://localhost:5504 ===")
+    app.run(port=5504, debug=False)

@@ -2,7 +2,7 @@
    FactCheckAI  –  app.js
    ══════════════════════════════════════════════════════════════════ */
 
-const API_BASE   = "https://fact-checker-whynot.onrender.com";
+const API_BASE   = "";
 const ARCHIVE_KEY = "factcheck_archive";   // localStorage key
 
 /* ── State ───────────────────────────────────────────────────────── */
