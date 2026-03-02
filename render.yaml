@@ -2,8 +2,9 @@ services:
   - type: web
     name: factcheck-api
     runtime: python
-    buildCommand: pip install -r fact-checker/requirements.txt
-    startCommand: gunicorn -w 2 -b 0.0.0.0:$PORT fact-checker.server:app
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 2 -b 0.0.0.0:$PORT server:app
+    rootDir: fact-checker
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
